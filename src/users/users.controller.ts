@@ -6,19 +6,21 @@ import {
   Put,
   Param,
   Delete,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User as UserModel, Prisma } from '@prisma/client';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  async createUser(
-    @Body() userData: Prisma.UserCreateInput,
-  ): Promise<UserModel> {
-    return this.usersService.createUser(userData);
+  @UsePipes(ValidationPipe)
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.createUser(createUserDto);
   }
 
   @Get()

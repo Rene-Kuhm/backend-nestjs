@@ -5,22 +5,34 @@ import {
   Body,
   Put,
   Param,
+  Delete,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
-import { Product as ProductModel } from '@prisma/client';
+import { Product as ProductModel, Prisma } from '@prisma/client';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.dcorator';
+import { CreateProductDto } from './dto/create-product.dto';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
   @Post()
   async createProduct(
-    @Body() productData: ProductModel,
-  ): Promise<ProductModel> {
-    return this.productsService.createProduct(productData);
+    @Body(new ValidationPipe()) createProductDto: CreateProductDto,
+  ) {
+    const productCreateInput: Prisma.ProductCreateInput = {
+      name: createProductDto.name,
+      price: createProductDto.price,
+      description: createProductDto.description || '',
+      imageUrl: createProductDto.imageUrl,
+    };
+    return this.productsService.createProduct(productCreateInput);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -42,5 +54,12 @@ export class ProductsController {
     @Body() productData: ProductModel,
   ): Promise<ProductModel> {
     return this.productsService.updateProduct(Number(id), productData);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Delete(':id')
+  async deleteProduct(@Param('id') id: string): Promise<ProductModel> {
+    return this.productsService.deleteProduct(Number(id));
   }
 }
